@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="RbMan2" default="clean">
+	
+
+	<property file="bytespring.properties" />
+
+	<echo message="SDK_HOME=${SDK_HOME}"/>
+	
+	<target name="init" depends="clean">
+	    <mkdir dir="${BUILD_DIR}"/>
+	</target>
+	
+	<target name="clean">
+	    <delete dir="${BUILD_DIR}"/>
+	</target>
+	
+	<target name="debugMain" depends="init">
+	  <antcall target="compileMXML">
+        <param name="_src" value="${MAIN_SOURCE_FILE}"/>
+        <param name="_dest" value="${BUILD_DIR}/${APP_ROOT_FILE}"/>
+	  	<param name="_debug" value="true"/>
+      </antcall>
+	</target>
+	<target name="buildMain" depends="init">
+	  <antcall target="compileMXML">
+        <param name="_src" value="${MAIN_SOURCE_FILE}"/>
+        <param name="_dest" value="${BUILD_DIR}/${APP_ROOT_FILE}"/>
+	  	<param name="_debug" value="false"/>
+      </antcall>
+	</target>
+	
+	<target name="compileMXML">
+		<java jar="${MXMLC.JAR}" fork="true" failonerror="true">
+	        <arg value="-debug=${_debug}"/>
+	        <arg value="+flexlib=${SDK_HOME}/frameworks"/>
+	        <arg value="-file-specs=${_src}"/>
+	        <arg value="-output=${_dest}"/>
+	    	<arg value="-compiler.library-path+=${APP_LIB_DIR}"/>
+	    	<arg value="-compiler.source-path+=${SOURCE_PATH}" />
+	    	<arg value="-compiler.source-path+=src/com/bytespring/rbman/resources/{locale}" />
+	    	<arg value="-compiler.locale=en_US" />
+	    	<arg value="-benchmark=true" />
+	    	<arg value="-use-network=false" />
+			<arg value="-services=${SERVICES_CONFIG}" />
+			<arg value="-context-root=${WEBAPP_CONTEXT_ROOT}" />
+	    </java>
+	</target>
+	
+	<target name="merge">
+		<copy todir="${BUILD_DIR}" preservelastmodified="true">
+			<fileset dir="${APP_ROOT_DIR}">
+				<include name="*.html" />
+				<include name="*.js" />
+				<include name="*.cfm" />
+				<include name="*.cfc" />
+				<include name="*.swf" />
+			</fileset>
+		</copy>
+		<copy todir="${BUILD_DIR}/com" preservelastmodified="true">
+			<fileset dir="${SERVER_SOURCE_DIR}"/>
+		</copy>
+		<copy todir="${BUILD_DIR}/tmp_data" preservelastmodified="true">
+			<fileset dir="${APP_ROOT_DIR}/tmp_data"/>
+		</copy>
+	</target>
+	
+	<target name="debug" depends="debugMain,merge" />
+	
+	<target name="build" depends="buildMain,merge" />
+	
+	<target name="deployToServer">
+		<copy todir="${APP_DEPLOY_DIR}" preservelastmodified="true">
+			<fileset dir="${BUILD_DIR}">
+				<include name="**/*.*"/>
+			</fileset>
+		</copy>
+	</target>
+	
+	<target name="createPackageDir">
+		<delete dir="${package.clean.dir}" />
+		<mkdir dir="${package.clean.dir}"/>
+	</target>
+	
+	<target name="packageBuild" depends="build">
+		
+	</target>
+	
+	<target name="package" depends="build,createPackageDir">
+		<!--- Check out the code into the clean dir -->
+		<exec executable="svn">
+			<arg line="export ${svn.projecturl} ${package.clean.dir} -r ${svn.revision} --username ${svn.username} --password ${svn.password} --force"/>
+		</exec>
+		
+		<!-- delete the dev directory -->
+		<delete dir="${package.clean.dir}/dev" />
+		
+		<!-- Remove any Eclipse .project or .settings files -->
+		<delete file="${package.clean.dir}/.project" />
+		<delete dir="${package.clean.dir}/.settings" />
+		
+		<!-- delete my personal settings -->
+		<delete file="${package.clean.dir}/bytespring.properties" />
+		
+		<!-- zip up the build directory and copy to the install dir -->
+		<zip destfile="${package.install.dir}/${package.install.filename}" basedir="${BUILD_DIR}" />
+		
+		<!-- Zip up the clean dir and copy the zip to the basedir -->
+		<zip destfile="${package.dir}/${package.filename}" basedir="${package.clean.dir}" />
+		
+		<!-- Remove clean dir
+		<delete dir="${build.clean}" /> -->
+		
+	</target>
+	
+</project>
