@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Panel 
+	xmlns:mx="http://www.adobe.com/2006/mxml"
+   xmlns:view="com.bytespring.rbman.view.*"
+   title="{ModelLocator.appName}: v {ModelLocator.version}"
+   titleStyleName="mainTitle"
+   horizontalAlign="center" layout="vertical" 
+	 verticalScrollPolicy="off" horizontalScrollPolicy="off"
+	 creationComplete="init()"> 
+	
+	<mx:Script>
+	<![CDATA[
+		import com.bytespring.rbman.model.Util;  
+	 	
+	 	import com.adobe.cairngorm.control.CairngormEventDispatcher;     
+		import com.bytespring.rbman.control.LoginEvent;   
+		import com.bytespring.rbman.model.Login;
+		import com.bytespring.rbman.vo.User;
+		import mx.events.ValidationResultEvent;
+		import flash.net.SharedObject;
+	  	import com.bytespring.rbman.model.ModelLocator;
+			
+	  	[Bindable]
+		public var login:Login;
+		private var lso:SharedObject;
+		
+		private function init():void
+		{
+			this.lso = SharedObject.getLocal("auth");
+			
+			if( this.lso.data['username'] != null )
+			{
+				this.username.text = this.lso.data['username'];
+				this.rememberLogin.selected = true;
+			}
+			if( this.lso.data['password'] != null )
+			{
+				this.password.text = this.lso.data['password'];
+				this.rememberLogin.selected = true;
+			}
+		}
+		  
+		public function loginUser() : void
+		{
+			var user : User = new User();
+			user.username = username.text;
+			user.password = password.text;
+			if( this.rememberLogin.selected )
+	    	{
+	      		login.rememberLogin = true;
+	    	}
+			
+			var event : LoginEvent = new LoginEvent( user );
+			CairngormEventDispatcher.getInstance().dispatchEvent( event );
+		}
+   
+		private function isValid():Boolean
+		{
+			var usernameValidResult:ValidationResultEvent = this.usernameValidator.validate(this.username.text);
+			var passwordValidResult:ValidationResultEvent = this.passwordValidator.validate(this.password.text);
+			if (usernameValidResult.type==ValidationResultEvent.VALID 
+				&& passwordValidResult.type==ValidationResultEvent.VALID) {
+				// reset the login
+				this.login.statusMessage = '';
+				this.login.isPending = false;	
+				return true;	
+			}else{
+				return false;	
+			}
+		}
+	]]>
+	</mx:Script>
+
+	<mx:StringValidator 
+		id="usernameValidator" 
+		source="{this.username}" 
+		property="text" 
+		required="true" />
+	<mx:StringValidator 
+		id="passwordValidator" 
+		source="{this.password}" 
+		property="text" 
+		required="true" />
+    
+	<mx:HBox width="100%" height="100%" verticalScrollPolicy="off" horizontalScrollPolicy="off">
+		<mx:Form id="loginForm" width="325" verticalScrollPolicy="off" horizontalScrollPolicy="off">
+		    <mx:Text text="{ this.login.statusMessage }" styleName="loginAlert" width="100%" height="30"/>
+		    <mx:FormItem width="100%" label="{Util.getString('login.username')}" required="true">
+		        <mx:TextInput id="username" width="175" change="isValid();"/>
+		    </mx:FormItem>
+		    <mx:FormItem width="100%" label="{Util.getString('login.password')}" required="true">
+		        <mx:TextInput id="password"	displayAsPassword="true" width="175" change="isValid();"/>
+		    </mx:FormItem>
+		    <mx:FormItem>
+		    	<mx:CheckBox id="rememberLogin" label="{Util.getString('login.remember')}" selected="false" />
+		    </mx:FormItem>
+		    <mx:VBox width="100%" horizontalAlign="right">
+		        <mx:Button label="{Util.getString('login')}" enabled="{!login.isPending}" click="loginUser();"/> 
+		    </mx:VBox>
+	    </mx:Form>
+	
+	    <mx:VBox width="100%" height="100%" paddingLeft="10" paddingRight="10" verticalGap="10" paddingTop="10">
+	       <mx:Image source="@Embed(source='/images/chop.gif')"/>
+	    </mx:VBox>
+	</mx:HBox>
+</mx:Panel>

@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Canvas xmlns:mx="http://www.adobe.com/2006/mxml">
+	
+	<mx:Script>
+		<![CDATA[
+			import com.bytespring.rbman.model.Util;
+			import com.adobe.cairngorm.control.CairngormEventDispatcher;
+			import com.bytespring.rbman.model.ModelLocator;
+			import com.bytespring.rbman.control.SetMainPanelStateEvent;
+			import com.bytespring.rbman.control.AddNewLocaleEvent;
+			import mx.events.ValidationResultEvent;
+		
+			
+			[Bindable]
+			private var model : ModelLocator = ModelLocator.getInstance();
+			
+			public function init():void{
+				this.rbloc.text = "";
+			}
+			
+			//user actions
+			private function ok():void{
+				if(isConfirmed()){
+					//add the new locale
+					var event : AddNewLocaleEvent = new AddNewLocaleEvent(this.rbloc.text);
+					CairngormEventDispatcher.getInstance().dispatchEvent(event);
+				}
+			}
+			
+			private function cancel():void{
+				//dispatch event to set main panel back to base state
+				var event : SetMainPanelStateEvent = new SetMainPanelStateEvent(ModelLocator.STATE_MAIN_PANEL_BASE);
+				CairngormEventDispatcher.getInstance().dispatchEvent(event);
+			}
+			
+			//Validation
+			private function isConfirmed():Boolean
+			{
+				var result:ValidationResultEvent = this.locValidator.validate(this.rbloc.text);
+				
+				if (result.type == ValidationResultEvent.VALID)
+				{
+					return true;	
+				}
+				else
+				{
+					return false;	
+				}
+				
+			}
+			
+		]]>
+	</mx:Script>
+	
+	<mx:RegExpValidator 
+    	id="locValidator" 
+    	source="{this.rbloc}"
+    	expression="{ModelLocator.locRE}"
+    	property="text" 
+    	required="true" />
+	
+	<mx:HBox width="100%" height="100%" verticalScrollPolicy="off" horizontalScrollPolicy="off" x="0" y="0">
+		<mx:Form width="325" verticalScrollPolicy="off" horizontalScrollPolicy="off">
+	    <mx:HBox>
+	    	<mx:Label text="{Util.getString('locale.add')}" styleName="title"/>
+	    </mx:HBox>
+	
+	    <mx:Text text="{Util.getString('locale.msg')}" 
+	    	width="100%" height="50" textAlign="left"/>
+	    
+	    <mx:FormItem width="100%" label="{Util.getString('locale')}" required="true">
+	        <mx:TextInput id="rbloc" width="175"/>
+	    </mx:FormItem>
+	    
+	    <mx:HBox width="100%" horizontalAlign="right">
+	        <mx:Button label="{Util.getString('cancel')}" click="cancel();"/>
+			<mx:Button label="{Util.getString('ok')}" click="ok();"/>
+	    </mx:HBox>
+    </mx:Form>
+	</mx:HBox>
+</mx:Canvas>

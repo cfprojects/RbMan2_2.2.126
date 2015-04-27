@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:VBox xmlns:mx="http://www.adobe.com/2006/mxml">
+
+	<mx:Script>
+    <![CDATA[
+    	import com.bytespring.rbman.model.Util;
+	    import mx.collections.ArrayCollection;
+	    import com.bytespring.rbman.model.ModelLocator;
+	    import com.bytespring.rbman.control.GetBundleEvent;
+	    import com.adobe.cairngorm.control.CairngormEventDispatcher;
+	    
+	    import mx.utils.ObjectUtil;
+		import mx.controls.Alert;
+	    
+	    [Bindable]
+	  	private var model : ModelLocator = ModelLocator.getInstance();
+
+		//Helper Functions
+		public function getBundle_Id():Number
+		{
+			return this.dtgBundleList.selectedItem.bundle_id;
+		}
+		
+		public function getTotalBundles():Number
+		{
+			return model.bundleList.length;
+		}
+		
+		private function getBundleDetail():void{
+			//get the bundleDetail
+			var event : GetBundleEvent = new GetBundleEvent(this.dtgBundleList.selectedItem.bundle_id);
+			CairngormEventDispatcher.getInstance().dispatchEvent(event);
+			this.dtgBundleList.selectedIndex = -1;
+		}
+		
+		public function reset():void{
+			dtgBundleList.dataProvider = null;
+			dtgBundleList.dataProvider = model.bundleList;
+		}
+		]]>
+	</mx:Script>
+	<mx:DataGrid id="dtgBundleList" dataProvider="{model.bundleList}" 
+		width="100%" height="100%" itemClick="getBundleDetail();">
+		<mx:columns>
+			<mx:DataGridColumn headerText="{Util.getString('bundle.index')}" dataField="name" editable="false"/>
+		</mx:columns>
+	</mx:DataGrid>
+</mx:VBox>

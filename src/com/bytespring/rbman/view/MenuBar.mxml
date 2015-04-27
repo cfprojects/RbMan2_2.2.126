@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<mx:HBox xmlns:mx="http://www.adobe.com/2006/mxml" width="100%">
+	<mx:Script>
+	    <![CDATA[
+	    	import com.adobe.cairngorm.control.CairngormEvent;
+	    	import mx.controls.Alert;
+	
+	        import mx.events.MenuEvent;
+	        import mx.collections.XMLListCollection;
+	        import com.bytespring.rbman.control.*;
+	        import com.adobe.cairngorm.control.CairngormEventDispatcher;
+	        import com.bytespring.rbman.model.ModelLocator;
+	
+	        [Bindable]
+	        private var menuBarCollection:XMLListCollection;
+	        
+	        [Bindable]
+	        private var model:ModelLocator = ModelLocator.getInstance();
+	        	
+	        // Event handler for the MenuBar control's itemClick event.
+	        private function menuHandler(event:MenuEvent):void  {
+	        	
+	        	var evt:CairngormEvent;
+	        	
+	        	if(event.item.@data == MainController.EVENT_ADD_BUNDLE){
+							evt = new AddBundleEvent();
+	        	}else if(event.item.@data == MainController.EVENT_DSP_DELETE_LOCALE){
+							evt = new DeleteLocaleEvent();
+	        	}else if(event.item.@data == MainController.EVENT_DSP_ADD_LOCALE){
+							evt = new AddLocaleEvent();
+	        	}else if(event.item.@data == MainController.EVENT_DSP_IMPORT){
+							evt = new DspImportEvent();
+	        	}else if(event.item.@data == MainController.EVENT_DSP_EXPORT){
+							evt = new DspExportEvent();
+	        	}
+	        	CairngormEventDispatcher.getInstance().dispatchEvent(evt);
+	        }
+	        
+	        private function logout():void{
+	        	CairngormEventDispatcher.getInstance().dispatchEvent(new LogoutEvent());
+	        }
+	        
+	        // The event listener for the itemClick event.
+			private function clickInfo(event:MenuEvent):void {
+			    var evtInfo:String ="event.type: " + event.type;
+			    evtInfo+="\nevent.index: " + event.index;
+			    evtInfo+="\nItem label: " + event.item.@label
+			    evtInfo+="\nItem selected: " + event.item.@toggled;
+			    evtInfo+= "\nItem type: " + event.item.@type;
+			    evtInfo+= "\nItem data: " + event.item.@data;
+			    Alert.show(evtInfo);
+			}
+
+	        public function setMenuBarCollection(mbc:XMLListCollection):void {
+	    			menuBarCollection = mbc;
+	        }
+	        
+	     ]]>
+	</mx:Script>
+	<mx:MenuBar labelField="@label" itemClick="menuHandler(event);" 
+		dataProvider="{menuBarCollection}" width="100%" cornerRadius="5" textAlign="left"/>
+	<mx:Image source="@Embed(source='/images/exit.png')" click="logout();" />
+</mx:HBox>

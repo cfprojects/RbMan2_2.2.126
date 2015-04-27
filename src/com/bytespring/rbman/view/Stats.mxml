@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Canvas xmlns:mx="http://www.adobe.com/2006/mxml" paddingBottom="0" paddingTop="0" >
+	<mx:Script>
+		<![CDATA[
+			import com.bytespring.rbman.model.Util;
+			import com.bytespring.rbman.model.ModelLocator;
+			
+			[Bindable]
+	  		private var model : ModelLocator = ModelLocator.getInstance();
+		]]>
+	</mx:Script>
+	<mx:Form paddingBottom="0" paddingTop="0" top="0" left="30">
+		<mx:FormItem label="{Util.getString('stats.bundles')}:">
+			<mx:Text text="{model.stats.totalBundles}"/>
+		</mx:FormItem>
+		<mx:FormItem label="{Util.getString('stats.keys')}:">
+			<mx:Text text="{model.stats.totalKeys}"/>
+		</mx:FormItem>
+		<mx:FormItem label="{Util.getString('stats.utkeys')}:">
+			<mx:Text text="{model.stats.totalUKeys}" styleName="alert"/>
+		</mx:FormItem>
+	</mx:Form>
+	<mx:Image source="@Embed(source='/images/chopSmall.gif')" top="3" left="0" />
+</mx:Canvas>

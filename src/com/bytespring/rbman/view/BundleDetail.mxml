@@ -1,0 +1,406 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Canvas xmlns:mx="http://www.adobe.com/2006/mxml" horizontalScrollPolicy="off" 
+	width="100%" height="100%" currentState="{model.bundleEditorState}">
+	<mx:Binding source="model.bundle" destination="bundle" />
+	<mx:Binding source="model.baseBundle" destination="baseBundle" />
+	<mx:Script>
+		<![CDATA[
+		import mx.controls.Alert;
+		import mx.collections.ArrayCollection;
+		import mx.events.ValidationResultEvent;
+		import com.adobe.cairngorm.control.CairngormEventDispatcher;
+		import com.bytespring.rbman.control.*;
+		import com.bytespring.rbman.model.*;
+		import com.bytespring.rbman.vo.*;
+		
+		[Bindable]
+		private var model : ModelLocator = ModelLocator.getInstance();
+		
+		[Bindable]
+		public var baseKeyValue:String;
+		
+		public var newRbKey:String;
+		public var newRbKeyValue:String;
+		
+		private var _bundle:BundleBean;
+		private var _baseBundle:BundleBean;
+		
+		[Bindable]
+		private var _deleteBundleEnabled:Boolean;
+		[Bindable]
+		private var _addKeyEnabled:Boolean;
+		[Bindable]
+		private var _deleteKeyEnabled:Boolean;
+		[Bindable]
+		private var _addBundleEnabled:Boolean;
+		
+		[Bindable]
+		[Inspectable]
+		public function get bundle():BundleBean{
+			return _bundle;
+		}
+		public function set bundle(bundle:BundleBean):void{
+			_bundle = bundle;
+			this.baseKeyValue = '';
+			this.currentState = model.bundleEditorState;
+			
+			// enable/disable stuff
+			_deleteBundleEnabled = model.perms.deleteBundle && model.currentLocale == ModelLocator.BASE_LOCALE;
+			_addKeyEnabled = model.perms.addKey && model.currentLocale == ModelLocator.BASE_LOCALE;
+			_deleteKeyEnabled = model.perms.deleteKey && model.currentLocale == ModelLocator.BASE_LOCALE;
+			_addBundleEnabled = model.perms.addBundle;
+		}
+		
+		[Bindable]
+		[Inspectable]
+		public function get baseBundle():BundleBean{
+			return _baseBundle;
+		}
+		public function set baseBundle(bundle:BundleBean):void{
+			_baseBundle = bundle;
+		}
+		
+		//Utility functions		
+		private function getBaseKey():void
+		{
+			this.baseKeyValue = '';
+			if(bundle.keyAC.length > 0){
+				var currentItem:KeyBean = keyBeansGrid.selectedItem as KeyBean;
+				var rbkey:String = currentItem.rbkey;
+				for each (var keyBean:KeyBean in baseBundle.keyAC){
+					if(keyBean.rbkey.toLowerCase() == rbkey.toLowerCase()){
+						this.baseKeyValue = keyBean.rbvalue;
+						break;
+					}
+				}
+			}
+		}
+		
+		private function addKeyBeansGridItem():void
+		{
+			if(isValidKey() == false){
+				Alert.show(getString('bundle.key.error'));
+			} else if(keyExists()){
+				Alert.show(getString('bundle.key.duplicate'));
+			}else{
+				var item:KeyBean = new KeyBean();
+				item.rbkey = addRbKey.text;
+				item.rbvalue = addRbValue.text;
+				addRbKey.text = '';
+				addRbValue.text = '';
+				bundle.keyAC.addItem(item);
+			
+				this.keyBeansGrid.selectedIndex = bundle.keyAC.length - 1;
+				this.keyBeansGrid.scrollToIndex(this.keyBeansGrid.selectedIndex);
+				this.currentState=model.bundleEditorState;
+				//reset the base key value
+				getBaseKey();
+			}
+		}
+		
+		private function deleteKeyBeansGridItem():void
+		{
+			if(this.keyBeansGrid.selectedIndex>=0){
+				for(var i:int=0; i < bundle.keyAC.length; i++)
+				{
+					var item:KeyBean = this.keyBeansGrid.selectedItem as KeyBean;
+					var newIndex:int;
+					if( bundle.keyAC[i]  == item )
+					{
+						bundle.keyAC.removeItemAt(i);
+			
+						if (i > 0 && bundle.keyAC.length > 1) {
+							newIndex = i - 1;
+						}else{
+							newIndex = i;
+						}
+						this.keyBeansGrid.selectedIndex = newIndex;
+						this.keyBeansGrid.scrollToIndex(newIndex);
+						break;
+					}
+				}
+				//reset the base key value
+				getBaseKey();
+			}
+		}
+		
+		//user actions
+		private function updateBundle():void{
+			if(isValidKeyBeanArray()){
+				var event : UpdateBundleEvent  = new UpdateBundleEvent(bundle);
+				bundle.editor = model.login.user.username;
+				CairngormEventDispatcher.getInstance().dispatchEvent(event);
+			}
+		}
+		
+		private function cancelAdd():void{
+			//dispatch event to set main panel back to base state
+			var event : SetMainPanelStateEvent = new SetMainPanelStateEvent(ModelLocator.STATE_MAIN_PANEL_BASE);
+			CairngormEventDispatcher.getInstance().dispatchEvent(event);
+		}
+		
+		private function createBundle():void{
+			if(isValidBundleName()){
+				var event : CreateBundleEvent = new CreateBundleEvent(bundle);
+				bundle.name = this.rb_bundle_name.text;
+				bundle.creator = model.login.user.username;
+				CairngormEventDispatcher.getInstance().dispatchEvent(event);
+			}else{
+				Alert.show(getString('bundle.name.invalid'));
+			}
+		}
+		
+		private function deleteBundle():void{
+			var event : DeleteBundleEvent = new DeleteBundleEvent(bundle.name);
+			CairngormEventDispatcher.getInstance().dispatchEvent(event);
+		}
+		
+		private function refreshView():void{
+			getBaseKey();
+		}
+		
+		//Validation
+		private function isValidKeyBeanArray():Boolean {
+			for each(var keyBean:KeyBean in bundle.keyAC){
+				if(keyBean.rbvalue.length == 0){
+					Alert.show(getString('key.value.length'));
+					return false;
+				}
+			}
+			return true;
+		}
+		
+		private function isValidBundleName():Boolean
+		{
+			var result:ValidationResultEvent = this.nameValidator.validate(this.rb_bundle_name.text);
+			
+			if (result.type == ValidationResultEvent.VALID)
+			{
+				return true;	
+			}
+			else
+			{
+				return false;	
+			}
+			
+		}
+		
+		private function isValidKey():Boolean
+		{
+			var result:ValidationResultEvent = this.nameValidator.validate(this.addRbKey.text);
+			
+			if (result.type == ValidationResultEvent.VALID)
+			{
+				return true;	
+			}
+			else
+			{
+				return false;	
+			}
+			
+		}
+		
+		private function keyExists():Boolean
+		{
+			for each(var keyBean:KeyBean in bundle.keyAC){
+				if( keyBean.rbkey == this.addRbKey.text) {
+					return true;
+				}
+			}
+			return false;
+		}
+		
+		private function formatDate(date:Date):String
+		{
+			return dfconv.format(date);
+		}
+		
+		private function getString(key:String):String{
+			return Util.getString(key);
+		}
+		
+		]]>
+	</mx:Script>
+
+	<mx:states>
+		<mx:State name="{ModelLocator.STATE_ADD_BUNDLE}">
+			<mx:SetProperty target="{this}" name="baseKeyValue" value="" />
+			<mx:SetProperty target="{rb_bundle_name}" name="editable" value="true" />
+			<mx:AddChild relativeTo="{keyBeansGrid}" position="after">
+				<mx:HBox width="100%" id="AddBundleControls">
+					<mx:Button label="{getString('cancel')}" textAlign="center" width="120" click="cancelAdd();" />
+					<mx:Spacer width="100%"/>
+					<mx:Button icon="@Embed(source='/images/add.png')" label="{getString('key.add')}" width="120"
+						click="{this.currentState=ModelLocator.STATE_ADD_KEY}" />
+					<mx:Button icon="@Embed(source='/images/delete.png')" label="{getString('key.delete')}" width="120"
+						click="deleteKeyBeansGridItem();" />
+					<mx:Spacer width="100%"/>
+					<mx:Button label="{getString('bundle.commit')}" textAlign="center" width="120" 
+						click="createBundle();"
+						icon="@Embed(source='/images/add.png')" 
+						enabled="{_addBundleEnabled}" />
+				</mx:HBox>
+			</mx:AddChild>
+		</mx:State>
+		
+		<mx:State name="{ModelLocator.STATE_EDIT_BUNDLE}">
+			<mx:SetProperty target="{this}" name="baseKeyValue" value="" />
+			<mx:SetProperty target="{rb_bundle_name}" name="editable" value="false" />
+			<mx:AddChild relativeTo="{keyBeansGrid}" position="after">
+				<mx:HBox width="100%" id="EditControls" horizontalGap="2">
+					<mx:Button icon="@Embed(source='/images/delete.png')" label="{getString('bundle.delete')}" 
+						textAlign="center" width="120" click="{this.currentState=ModelLocator.STATE_DELETE_BUNDLE}"
+						visible="{_deleteBundleEnabled}"/>
+					<mx:Spacer width="100%"/>
+					<mx:Button icon="@Embed(source='/images/add.png')" label="{getString('key.add')}" width="120"
+						click="{this.currentState=ModelLocator.STATE_ADD_KEY}" visible="{_addKeyEnabled}" />
+					<mx:Button icon="@Embed(source='/images/delete.png')" label="{getString('key.delete')}" 
+						width="120" visible="{_deleteKeyEnabled}"
+						click="deleteKeyBeansGridItem();" />
+					<mx:Spacer width="100%"/>
+					<mx:Button label="{getString('bundle.commit')}" textAlign="center" width="120" 
+						icon="@Embed(source='/images/add.png')" 
+						click="updateBundle();"/>
+				</mx:HBox>
+			</mx:AddChild>
+		</mx:State>
+		<mx:State name="{ModelLocator.STATE_DELETE_BUNDLE}">
+			<mx:AddChild relativeTo="{keyBeansGrid}" position="after">
+				<mx:HBox width="100%" id="DeleteControls">
+					<mx:Text text="{getString('bundle.delete.prompt')}" />
+					<mx:Spacer width="100%" />
+					<mx:Button width="100" label="{getString('yes')}"	click="deleteBundle();" />
+					<mx:Button width="100" label="{getString('no')}"	click="{currentState=model.bundleEditorState;}" />
+				</mx:HBox>
+			</mx:AddChild>
+		</mx:State>
+		<mx:State name="{ModelLocator.STATE_ADD_KEY}">
+			<mx:AddChild relativeTo="{keyBeansGrid}" position="after">
+				<mx:HBox width="100%" id="AddKeyControls" >
+					<mx:TextInput id="addRbKey" width="75" />
+					<mx:TextInput id="addRbValue" width="100%" />
+					<mx:Button id="addKeyBtn"
+					icon="@Embed(source='/images/add.png')" label="{getString('key.add')}"
+					click="addKeyBeansGridItem();" />
+					<mx:Button width="100" label="{getString('cancel')}"
+					click="{currentState=model.bundleEditorState;}" />
+				</mx:HBox>
+			</mx:AddChild>
+		</mx:State>
+	</mx:states>
+	
+	<mx:RegExpValidator 
+    	id="nameValidator" 
+    	source="{this.rb_bundle_name}"
+    	expression="{ModelLocator.nameRE}"
+    	property="text" 
+    	required="true" />
+ 	<mx:RegExpValidator 
+    	id="keyValidator" 
+    	source="{this.addRbKey}"
+    	expression="{ModelLocator.nameRE}"
+    	property="text" 
+    	required="true" />
+    	
+	<mx:DateFormatter id="dfconv" formatString="DD MMM YYYY"/>
+	
+	<mx:HBox width="100%" height="100%" paddingBottom="10" paddingLeft="10" paddingRight="10" paddingTop="10">
+		<mx:VBox width="100%" height="100%">
+			<mx:HBox width="100%">
+				<mx:Label text="{getString('bundle.name')}" styleName="nameLabel" />
+				<mx:TextInput id="rb_bundle_name" text="{bundle.name}" 
+				editable="false" maxChars="64" styleName="nameInput" width="100%" />
+			</mx:HBox>
+			
+			<mx:DataGrid width="100%" height="100%" id="keyBeansGrid" 
+				dataProvider="{bundle.keyAC}" change="refreshView()" editable="true">
+				<mx:columns>
+					<mx:DataGridColumn headerText="{getString('bundle.key')}" dataField="rbkey" width="75" editable="false"/>
+					<mx:DataGridColumn headerText="{getString('key.translation')}" wordWrap="false" dataField="rbvalue" />
+					<mx:DataGridColumn headerText="{getString('key.comments')}" wordWrap="false" 
+						dataField="comments" width="160" editable="true" />
+					<mx:DataGridColumn width="17" editable="false" itemRenderer="com.bytespring.rbman.view.TranslatedItemRenderer" />	
+				</mx:columns>
+			</mx:DataGrid>
+			<!-- 
+				controls are inserted here 
+			-->
+		</mx:VBox>
+		<mx:VBox width="300" height="100%">
+			<mx:Grid width="300">
+				<mx:GridRow width="100%" height="100%">
+					<mx:GridItem width="90" height="100%">
+						<mx:Label text="{getString('bundle.created')}" fontWeight="bold"/>
+					</mx:GridItem>
+					<mx:GridItem width="100%" height="100%">
+						<mx:Text id="rb_bundle_createdate" 
+							text="{formatDate(bundle.createdate)}" width="100%"/>
+					</mx:GridItem>
+				</mx:GridRow>
+				<mx:GridRow width="100%" height="100%">
+					<mx:GridItem width="90" height="100%">
+						<mx:Label text="{getString('bundle.creator')}" fontWeight="bold"/>
+					</mx:GridItem>
+					<mx:GridItem width="100%" height="100%">
+						<mx:Text id="rb_bundle_creator" 
+							text="{bundle.creator}" width="100%"/>
+					</mx:GridItem>
+				</mx:GridRow>
+				<mx:GridRow width="100%" height="100%" id="gridrow1">
+					<mx:GridItem width="90" height="100%">
+						<mx:Label text="{getString('bundle.translated')}" fontWeight="bold"/>
+					</mx:GridItem>
+					<mx:GridItem width="100%" height="100%">
+						<mx:Text id="rb_bundle_editdate" 
+							text="{formatDate(bundle.editdate)}" width="100%" />
+					</mx:GridItem>
+				</mx:GridRow>
+				<mx:GridRow width="100%" height="100%">
+					<mx:GridItem width="90" height="100%">
+						<mx:Label text="{getString('bundle.translator')}" fontWeight="bold"/>
+					</mx:GridItem>
+					<mx:GridItem width="100%" height="100%">
+						<mx:Text id="rb_bundle_editor" 
+							text="{bundle.editor}" width="100%"/>
+					</mx:GridItem>
+				</mx:GridRow>
+			</mx:Grid>
+			<mx:HRule width="100%" />
+			<mx:Grid width="300">
+				<mx:GridRow width="100%" height="100%">
+					<mx:GridItem width="90" height="100%">
+						<mx:Label text="{getString('bundle.key')}" fontWeight="bold"/>
+					</mx:GridItem>
+					<mx:GridItem width="100%" height="100%">
+						<mx:Text text="{keyBeansGrid.selectedItem.rbkey}"/>
+					</mx:GridItem>
+				</mx:GridRow>
+				<mx:GridRow width="100%" height="100%">
+					<mx:GridItem width="90" height="100%">
+						<mx:Label text="{getString('key.base.value')}" fontWeight="bold"/>
+					</mx:GridItem>
+					<mx:GridItem width="100%" height="100%" id="griditem1">
+						<mx:Text text="{this.baseKeyValue}" width="100%"/>
+					</mx:GridItem>
+				</mx:GridRow>
+				<mx:GridRow width="100%" height="100%">
+					<mx:GridItem width="90" height="100%">
+						<mx:Label text="{getString('key.translation')}" fontWeight="bold"/>
+					</mx:GridItem>
+					<mx:GridItem width="100%" height="100%">
+						<mx:Text text="{keyBeansGrid.selectedItem.rbvalue}" width="100%"/>
+					</mx:GridItem>
+				</mx:GridRow>
+				<mx:GridRow width="100%" height="100%">
+					<mx:GridItem width="90" height="100%">
+						<mx:Label text="{getString('key.comments')}" fontWeight="bold"/>
+					</mx:GridItem>
+					<mx:GridItem width="100%" height="100%">
+						<mx:Text text="{keyBeansGrid.selectedItem.comments}" width="100%"/>
+					</mx:GridItem>
+				</mx:GridRow>
+			</mx:Grid>
+		</mx:VBox>
+	</mx:HBox>
+
+</mx:Canvas>

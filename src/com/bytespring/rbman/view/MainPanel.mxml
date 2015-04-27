@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Canvas xmlns:mx="http://www.adobe.com/2006/mxml" styleName="shadowCanvas"
+	xmlns:view="com.bytespring.rbman.view.*" currentState="{model.mainPanelState}" 
+	enterState="splash.visible=true;" width="100%" height="100%">
+	
+	<mx:Script>
+		<![CDATA[
+			import com.bytespring.rbman.model.ModelLocator;
+			[Bindable]
+			private var model : ModelLocator = ModelLocator.getInstance();
+			
+		]]>
+	</mx:Script>
+	
+	<mx:states>
+		<mx:State name="{ModelLocator.STATE_MAIN_PANEL_ADD_LOCALE}" enterState="this.addLocale.init();">
+			<mx:RemoveChild target="{splash}" />
+			<mx:AddChild position="lastChild">
+				<mx:HBox width="100%" height="100%" horizontalAlign="center" verticalAlign="middle">
+					<view:AddLocale  id="addLocale"/>
+				</mx:HBox>
+			</mx:AddChild>
+		</mx:State>
+		<mx:State name="{ModelLocator.STATE_MAIN_PANEL_DELETE_LOCALE}" enterState="this.deleteLocale.init();">
+			<mx:RemoveChild target="{splash}" />
+			<mx:AddChild position="lastChild">
+				<mx:HBox width="100%" height="100%" horizontalAlign="center" verticalAlign="middle">
+					<view:DeleteLocale id="deleteLocale" />
+				</mx:HBox>
+			</mx:AddChild>
+		</mx:State>
+		<mx:State name="{ModelLocator.STATE_MAIN_PANEL_BUNDLE_DETAIL}">
+			<mx:RemoveChild target="{splash}" />
+			<mx:AddChild position="lastChild">
+				<mx:HBox width="100%" height="100%" horizontalAlign="center" verticalAlign="middle">
+					<view:BundleDetail width="100%" height="100%" />
+				</mx:HBox>
+			</mx:AddChild>
+		</mx:State>
+		<mx:State name="{ModelLocator.STATE_MAIN_PANEL_IMPORT}">
+			<mx:RemoveChild target="{splash}" />
+			<mx:AddChild position="lastChild">
+				<mx:HBox width="100%" height="100%" horizontalAlign="center" verticalAlign="middle">
+					<view:ImportBundles />
+				</mx:HBox>
+			</mx:AddChild>
+		</mx:State>
+		<mx:State name="{ModelLocator.STATE_MAIN_PANEL_EXPORT}" enterState="exportBundles.init();">
+			<mx:RemoveChild target="{splash}" />
+			<mx:AddChild position="lastChild">
+				<mx:HBox width="100%" height="100%" horizontalAlign="center" verticalAlign="middle">
+					<view:ExportBundles id="exportBundles" />
+				</mx:HBox>
+			</mx:AddChild>
+		</mx:State>
+	</mx:states>
+	
+	<mx:transitions>
+		<mx:Transition fromState="*" toState="*">
+			<mx:Parallel targets="{[splash,BundleDetail,AddLocale,DeleteLocale,ImportBundles,ExportBundles]}">
+				<mx:Blur blurXFrom="100.0" blurXTo="0.0" duration="300" />
+			</mx:Parallel>
+		</mx:Transition>
+	</mx:transitions>
+	
+	<view:RssSplashScreen id="splash" height="100%" width="100%" />
+	
+</mx:Canvas>

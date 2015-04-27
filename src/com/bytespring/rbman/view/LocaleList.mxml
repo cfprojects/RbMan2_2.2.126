@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:ComboBox xmlns:mx="http://www.adobe.com/2006/mxml" dataProvider="{localeList}" 
+	width="100%" change="switchLocale();" xmlns="com.bytespring.rbman.view.*" 
+	enabled="{model.perms.switchLocale == true}" >
+	
+	<mx:Script>
+	    <![CDATA[
+	    	import com.bytespring.rbman.model.Util;
+	    	import com.adobe.cairngorm.control.CairngormEventDispatcher;
+	    	import com.bytespring.rbman.model.ModelLocator;
+			import com.bytespring.rbman.control.GetBundleListEvent;
+	    	
+	    	[Bindable]
+	    	private var model:ModelLocator = ModelLocator.getInstance();
+	    	
+			private var _locale:String;
+			private var _localeList:Array;
+			
+			private var dirty:Boolean;
+			
+			[Bindable]
+			[Inspectable]
+			public function set locale(locale:String):void{
+				if(locale){
+					_locale = locale;
+					dirty = true;
+					this.invalidateProperties();
+				}
+			}
+			public function get locale():String{
+				return _locale;
+			}
+			
+			[Bindable]
+			[Inspectable]
+			public function set localeList(localeList:Array):void{
+				if(localeList){
+					_localeList = localeList;
+					dirty = true;
+					this.invalidateProperties();
+				}
+			}
+			public function get localeList():Array{
+				return _localeList;
+			}
+			
+			override protected function commitProperties():void{
+				if(dirty){
+					dirty = false;
+					setSelectedItem();
+				}
+				super.commitProperties();
+			}
+			
+			private function setSelectedItem():void
+			{
+				if(localeList && locale.length > 0){
+					for (var i:int = 0; i < localeList.length; i++)	{
+						if(localeList[i].toString() == locale){
+							this.selectedIndex = i;
+						}
+					}
+				}
+			}
+			
+			private function switchLocale():void {
+				//get the bundleList
+				var event : GetBundleListEvent = new GetBundleListEvent(this.selectedItem.toString());
+				CairngormEventDispatcher.getInstance().dispatchEvent(event);
+			}
+			
+	    ]]>
+	</mx:Script>
+</mx:ComboBox>

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Canvas xmlns:mx="http://www.adobe.com/2006/mxml" 
+	width="100%" horizontalScrollPolicy="off" styleName="shadowCanvas" xmlns:view="com.bytespring.rbman.view.*">
+	<mx:Script>
+		<![CDATA[
+			import com.bytespring.rbman.model.Message;
+			import com.bytespring.rbman.model.ModelLocator;
+			
+			[Bindable]
+			private var model:ModelLocator = ModelLocator.getInstance();
+		]]>
+	</mx:Script>
+	<mx:VBox width="100%" height="100%">
+		<mx:Repeater dataProvider="{model.messageArray}" id="messageList">
+			<view:MessageRenderer mouseChildren="true" width="100%"
+				 data="{messageList.currentItem as Message}"  />
+		</mx:Repeater>
+	</mx:VBox>
+</mx:Canvas>

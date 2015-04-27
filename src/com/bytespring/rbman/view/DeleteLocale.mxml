@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Canvas xmlns:mx="http://www.adobe.com/2006/mxml">
+	
+	<mx:Script>
+		<![CDATA[
+			import com.bytespring.rbman.model.Util;
+			import com.adobe.cairngorm.control.CairngormEventDispatcher;
+			import com.bytespring.rbman.model.ModelLocator;
+			import com.bytespring.rbman.control.SetMainPanelStateEvent;
+			import com.bytespring.rbman.control.DeleteCurrentLocaleEvent;
+			import mx.events.ValidationResultEvent;
+		
+			private static const confirmKey:String = 'yes';
+			private static const confirmKeyRE:String = '^' + confirmKey + '$';
+			
+			[Bindable]
+			private var model : ModelLocator = ModelLocator.getInstance();
+			
+			public function init():void{
+				this.confirmText.text = "";
+			}
+			
+			//user actions
+			private function ok():void{
+				if(isConfirmed()){
+					//delete the current locale
+					var event : DeleteCurrentLocaleEvent = new DeleteCurrentLocaleEvent();
+					CairngormEventDispatcher.getInstance().dispatchEvent(event);
+				}
+			}
+			
+			private function cancel():void{
+				//dispatch event to set main panel back to base state
+				var event : SetMainPanelStateEvent = new SetMainPanelStateEvent(ModelLocator.STATE_MAIN_PANEL_BASE);
+				CairngormEventDispatcher.getInstance().dispatchEvent(event);
+			}
+			
+			//Validation
+			private function isConfirmed():Boolean
+			{
+				var result:ValidationResultEvent = this.delValidator.validate(this.confirmText.text);
+				
+				if (result.type == ValidationResultEvent.VALID)
+				{
+					return true;	
+				}
+				else
+				{
+					return false;	
+				}
+				
+			}
+			
+		]]>
+	</mx:Script>
+	
+	<mx:RegExpValidator 
+    	id="delValidator" 
+    	source="{this.confirmText}"
+    	expression="{confirmKeyRE}"
+    	property="text" 
+    	required="true" />
+	
+	<mx:HBox width="100%" height="100%" verticalScrollPolicy="off" horizontalScrollPolicy="off" x="0" y="0">
+		<mx:Form width="325" verticalScrollPolicy="off" horizontalScrollPolicy="off">
+	    <mx:HBox>
+	    	<mx:Label text="{Util .getString('locale.current')}:" styleName="title"/>
+				<mx:Text text="{model.currentLocale}"  styleName="title"/>
+	    </mx:HBox>
+			<mx:Text width="100%" text="{Util.getString('locale.delete.msg')}"/>
+	
+	    <mx:Text text="{resourceManager.getString('resources','locale.delete.confirm',[confirmKey])}" color="red" width="100%" 
+	    	height="30" textAlign="left"/>
+	    
+	    <mx:FormItem width="100%" label="{Util .getString('locale.confirm')}" required="true">
+	        <mx:TextInput id="confirmText" width="175"/>
+	    </mx:FormItem>
+	    
+	    <mx:HBox width="100%" horizontalAlign="right">
+	        <mx:Button label="{Util .getString('cancel')}" click="cancel();"/>
+					<mx:Button label="{Util .getString('ok')}" click="ok();"/>
+	    </mx:HBox>
+    </mx:Form>
+	</mx:HBox>
+</mx:Canvas>

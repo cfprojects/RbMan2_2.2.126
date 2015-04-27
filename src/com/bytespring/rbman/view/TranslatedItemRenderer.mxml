@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Canvas xmlns:mx="http://www.adobe.com/2006/mxml">
+	
+	<mx:Binding source="data as KeyBean" destination="keyBean" />
+	<mx:Script>
+	<![CDATA[
+		import com.bytespring.rbman.vo.KeyBean;
+		import mx.events.FlexEvent;
+	
+		private var _keyBean:KeyBean;
+		private var isDirty:Boolean = false;
+		
+		override protected function commitProperties():void{
+			if(keyBean && isDirty){
+				if (keyBean.translated == 1) {
+					img.visible = true;
+				}else{
+					img.visible = false;
+				}
+				this.isDirty = false;
+				super.commitProperties();
+			}
+		}
+		
+		[Bindable]
+		public function set keyBean(keyBean:KeyBean):void{
+			if(keyBean){
+				_keyBean=keyBean;
+				isDirty=true;
+				invalidateProperties();
+			}
+		}
+		public function get keyBean():KeyBean{
+			return _keyBean;
+		}
+	]]>
+	</mx:Script>
+	<mx:Image id="img" source="@Embed(source='/images/tick.png')" 
+		width="16" height="16" visible="false" bottom="0" right="0" />
+</mx:Canvas>

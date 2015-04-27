@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Text xmlns:mx="http://www.adobe.com/2006/mxml">
+	<mx:Script>
+		<![CDATA[
+			import com.bytespring.rbman.model.Message;
+			
+			private var _message:Message;
+			
+			override public function set data(value:Object):void{
+				if(value && value is Message){
+					_message = value as Message;
+					this.text = _message.text;
+					if(_message.type == Message.ERROR){
+						this.styleName = 'alert';
+					}else{
+						this.styleName = 'info';
+					}		
+				}
+			}
+			
+			
+		]]>
+	</mx:Script>
+</mx:Text>

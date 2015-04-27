@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Canvas xmlns:mx="http://www.adobe.com/2006/mxml"
+	horizontalScrollPolicy="off" verticalScrollPolicy="off">
+	
+	<mx:Script>
+		<![CDATA[
+			import com.bytespring.rbman.model.Util;
+			import com.adobe.cairngorm.control.CairngormEventDispatcher;
+			import com.bytespring.rbman.model.ModelLocator;
+			import com.bytespring.rbman.control.SetMainPanelStateEvent;
+			import com.bytespring.rbman.control.ExportBundlesEvent;
+			import mx.events.ValidationResultEvent;
+		
+			
+			[Bindable]
+			private var model : ModelLocator = ModelLocator.getInstance();
+			
+			[Bindable]
+			private var okEnabled:Boolean = false;
+			
+			public function init():void{
+				srcList.dataProvider = getBundleList();
+				destList.dataProvider = [];
+				okEnabled = false;
+				resetProgressBar();
+			}
+			
+			//user actions
+			private function ok():void{
+				//send the list
+				var event : ExportBundlesEvent = new ExportBundlesEvent(getSelectedItems(),String(this.encoding.value),this.progressBar);
+				CairngormEventDispatcher.getInstance().dispatchEvent(event);
+				okEnabled = false;
+			}
+			
+			private function cancel():void{
+				//dispatch event to set main panel back to base state
+				var event : SetMainPanelStateEvent = new SetMainPanelStateEvent(ModelLocator.STATE_MAIN_PANEL_BASE);
+				CairngormEventDispatcher.getInstance().dispatchEvent(event);
+			}
+			
+			// utility functions
+			private function getBundleList():Array{
+				var list:Array = new Array;
+				var item:Object;
+				for(var i:int=0; i < model.bundleList.length; i++){
+					item = model.bundleList[i];
+					list.push(String(item.name));
+				}
+				return list;
+			}
+			
+			private function getSelectedItems():Array{
+				var selectedItems:Array = destList.dataProvider.source as Array;
+				return selectedItems;
+			}
+			
+			private function resetProgressBar():void{
+    	if(progressBar != null){
+    		this.progressBar.mode = "manual";
+    		progressBar.label = "";
+      	progressBar.maximum = 0;
+      	progressBar.minimum = 0;
+    	}
+    }
+			
+			
+		]]>
+	</mx:Script>
+	
+	<mx:HBox width="100%" height="100%" verticalScrollPolicy="off" horizontalScrollPolicy="off" x="0" y="0">
+		<mx:Form verticalScrollPolicy="off" horizontalScrollPolicy="off">
+	    <mx:Label text="{Util.getString('export.bundles')}" styleName="title"/>
+	    <mx:Text width="100%" text="{Util.getString('export.msg')}" />
+			<mx:HBox>
+			 <mx:VBox>
+			  <mx:Label text="{Util.getString('bundle.index')}" textDecoration="bold"/>
+			  <mx:List id="srcList" height="200" allowMultipleSelection="true"
+			  dragEnabled="true" width="210"/>
+			 </mx:VBox>
+			 <mx:VBox>
+			  <mx:Label text="{Util.getString('export.selected')}" textDecoration="bold"/>
+			  <mx:List id="destList" height="200" dropEnabled="true" width="210" 
+			  	dragDrop="okEnabled = true;" />
+			 </mx:VBox>
+			</mx:HBox>
+			<mx:ProgressBar id="progressBar" labelPlacement="center" trackHeight="15" 
+	      	width="100%" height="20" horizontalCenter="0"/>
+	    <mx:HBox width="100%" horizontalAlign="right">
+	        <mx:Button label="{Util.getString('cancel')}" click="cancel();" />
+			<mx:Button label="{Util.getString('reset')}" click="init();"/>
+			<mx:Spacer width="100%"/>
+			<mx:ComboBox id="encoding" dataProvider="{ModelLocator.encodings}" />
+			<mx:Button id="okButton" label="{Util.getString('ok')}" click="ok();" enabled="{okEnabled}" />
+	    </mx:HBox>
+    </mx:Form>
+	</mx:HBox>
+</mx:Canvas>
